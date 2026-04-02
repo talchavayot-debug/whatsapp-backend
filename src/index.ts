@@ -23,6 +23,13 @@ function authMiddleware(req: any, res: any, next: any) {
   next();
 }
 
+  if (!SERVICE_KEY || key !== SERVICE_KEY) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  next();
+}
+
 // בדיקת שרת
 app.get('/health', (_req, res) => {
   res.json({ ok: true, timestamp: new Date().toISOString() });
