@@ -10,7 +10,7 @@ import { Boom } from '@hapi/boom';
 import { SessionInfo } from './types';
 
 const sessions = new Map<string, any>();
-const logger = pino({ level: 'silent' });
+const logger = pino({ level: 'debug' });
 
 const SESSIONS_DIR = process.env.SESSIONS_DIR || '/sessions';
 
