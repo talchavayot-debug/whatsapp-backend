@@ -1,5 +1,4 @@
 import express from 'express';
-import dotenv from 'dotenv';
 import {
   createSession,
   getSessionStatus,
@@ -7,29 +6,29 @@ import {
   disconnectSession,
 } from './sessionManager';
 
-dotenv.config();
-
 const app = express();
 app.use(express.json());
 
 const PORT = process.env.PORT || 8080;
 const SERVICE_KEY = process.env.SERVICE_SECRET_KEY;
 
-// 🔐 Middleware לאבטחה
+// middleware לאבטחה
 function authMiddleware(req: any, res: any, next: any) {
   const key = req.headers['x-service-key'];
+
   if (!SERVICE_KEY || key !== SERVICE_KEY) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
+
   next();
 }
 
-// 🟢 בדיקת שרת
-app.get('/', (req, res) => {
-  res.send('WhatsApp Backend is running 🚀');
+// בדיקת שרת
+app.get('/health', (_req, res) => {
+  res.json({ ok: true, timestamp: new Date().toISOString() });
 });
 
-// 📲 יצירת סשן
+// יצירת session
 app.post('/session/create', authMiddleware, async (req, res) => {
   const { tenantId } = req.body;
 
@@ -45,21 +44,21 @@ app.post('/session/create', authMiddleware, async (req, res) => {
   }
 });
 
-// 📊 סטטוס סשן
+// סטטוס session
 app.get('/session/status/:tenantId', authMiddleware, (req, res) => {
   const { tenantId } = req.params;
   const result = getSessionStatus(tenantId);
   res.json(result);
 });
 
-// 📷 קבלת QR
+// QR
 app.get('/session/qr/:tenantId', authMiddleware, (req, res) => {
   const { tenantId } = req.params;
   const result = getSessionQR(tenantId);
   res.json(result);
 });
 
-// 🔥🔥🔥 זה מה שהיה חסר לך!!!
+// ניתוק session
 app.post('/session/disconnect/:tenantId', authMiddleware, async (req, res) => {
   const { tenantId } = req.params;
   const clear = req.query.clear === 'true';
@@ -73,5 +72,5 @@ app.post('/session/disconnect/:tenantId', authMiddleware, async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🔥 WhatsApp Backend running on port ${PORT}`);
+  console.log(`[WhatsApp Backend] Running on port ${PORT}`);
 });
