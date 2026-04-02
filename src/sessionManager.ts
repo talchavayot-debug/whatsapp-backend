@@ -13,6 +13,7 @@ function getSessionPath(tenantId: string) {
 
 export async function createSession(tenantId: string) {
   const sessionPath = getSessionPath(tenantId);
+  fs.mkdirSync(SESSIONS_DIR, { recursive: true });
   fs.mkdirSync(sessionPath, { recursive: true });
 
   const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
