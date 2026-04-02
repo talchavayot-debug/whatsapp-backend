@@ -1,4 +1,4 @@
-import * as express from 'express';
+import express from 'express';
 import { authenticateServiceKey } from './auth';
 import sessionRoutes from './routes';
 
