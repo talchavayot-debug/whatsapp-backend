@@ -1,83 +1,63 @@
 import express from 'express';
-import {
-  createSession,
-  getSessionStatus,
-  getSessionQR,
-  disconnectSession,
-} from './sessionManager';
+import dotenv from 'dotenv';
+import { createSession, getSessionStatus, getSessionQR, disconnectSession } from './sessionManager';
+
+dotenv.config();
 
 const app = express();
 app.use(express.json());
 
-const PORT = process.env.PORT || 8080;
-const SERVICE_KEY = process.env.SERVICE_SECRET_KEY;
+const PORT = process.env.PORT || 3000;
 
-// middleware לאבטחה
-function authMiddleware(req: any, res: any, next: any) {
+// 🔐 Middleware לאימות
+app.use((req, res, next) => {
   const key = req.headers['x-service-key'];
 
-  if (!SERVICE_KEY || key !== SERVICE_KEY) {
+  if (key !== process.env.SERVICE_SECRET_KEY) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
   next();
-}
-
-  if (!SERVICE_KEY || key !== SERVICE_KEY) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  next();
-}
-
-// בדיקת שרת
-app.get('/health', (_req, res) => {
-  res.json({ ok: true, timestamp: new Date().toISOString() });
 });
 
-// יצירת session
-app.post('/session/create', authMiddleware, async (req, res) => {
+// יצירת סשן
+app.post('/session/create', async (req, res) => {
   const { tenantId } = req.body;
 
   if (!tenantId) {
-    return res.status(400).json({ error: 'tenantId is required' });
+    return res.status(400).json({ error: 'tenantId required' });
   }
 
-  try {
-    const result = await createSession(tenantId);
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to create session' });
-  }
+  const result = await createSession(tenantId);
+  res.json(result);
 });
 
-// סטטוס session
-app.get('/session/status/:tenantId', authMiddleware, (req, res) => {
+// סטטוס סשן
+app.get('/session/status/:tenantId', (req, res) => {
   const { tenantId } = req.params;
   const result = getSessionStatus(tenantId);
   res.json(result);
 });
 
-// QR
-app.get('/session/qr/:tenantId', authMiddleware, (req, res) => {
+// QR קוד
+app.get('/session/qr/:tenantId', (req, res) => {
   const { tenantId } = req.params;
   const result = getSessionQR(tenantId);
   res.json(result);
 });
 
-// ניתוק session
-app.post('/session/disconnect/:tenantId', authMiddleware, async (req, res) => {
+// ניתוק
+app.post('/session/disconnect/:tenantId', async (req, res) => {
   const { tenantId } = req.params;
-  const clear = req.query.clear === 'true';
+  const result = await disconnectSession(tenantId);
+  res.json(result);
+});
 
-  try {
-    const result = await disconnectSession(tenantId, clear);
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to disconnect session' });
-  }
+// בדיקת שרת
+app.get('/', (req, res) => {
+  res.send('WhatsApp backend is running 🚀');
 });
 
 app.listen(PORT, () => {
-  console.log(`[WhatsApp Backend] Running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
