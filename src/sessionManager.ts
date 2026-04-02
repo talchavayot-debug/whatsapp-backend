@@ -21,11 +21,13 @@ export async function createSession(tenantId: string): Promise<SessionInfo> {
 
   const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
 
-  const sock = makeWASocket({
-    auth: state,
-    logger,
-  });
-
+const sock = makeWASocket({
+  auth: state,
+  logger,
+  printQRInTerminal: true,
+  browser: ['Chrome', 'Desktop', '121.0.0']
+});
+  
   const info: SessionInfo = {
     tenantId,
     status: 'connecting',
