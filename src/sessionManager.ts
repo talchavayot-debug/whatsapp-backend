@@ -5,7 +5,7 @@ import * as QRCode from 'qrcode';
 
 const sessions = new Map<string, any>();
 
-const SESSIONS_DIR = process.env.SESSIONS_DIR || '/sessions';
+const SESSIONS_DIR = './sessions';
 
 function getSessionPath(tenantId: string) {
   return path.join(SESSIONS_DIR, tenantId);
