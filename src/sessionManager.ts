@@ -1,16 +1,9 @@
-import makeWASocket, {
-  DisconnectReason,
-  useMultiFileAuthState,
-} from '@whiskeysockets/baileys';
+import makeWASocket, { useMultiFileAuthState, DisconnectReason } from '@whiskeysockets/baileys';
 import * as fs from 'fs';
 import * as path from 'path';
-import pino from 'pino';
-import QRCode from 'qrcode';
-import { Boom } from '@hapi/boom';
-import { SessionInfo } from './types';
+import * as QRCode from 'qrcode';
 
 const sessions = new Map<string, any>();
-const logger = pino({ level: 'debug' });
 
 const SESSIONS_DIR = process.env.SESSIONS_DIR || '/sessions';
 
@@ -18,60 +11,42 @@ function getSessionPath(tenantId: string) {
   return path.join(SESSIONS_DIR, tenantId);
 }
 
-export async function createSession(tenantId: string): Promise<SessionInfo> {
+export async function createSession(tenantId: string) {
   const sessionPath = getSessionPath(tenantId);
   fs.mkdirSync(sessionPath, { recursive: true });
 
   const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
 
   const sock = makeWASocket({
-    auth: state,
-    logger,
-    printQRInTerminal: true,
-    browser: ['Chrome', 'Desktop', '121.0.0'],
+    auth: state
   });
 
-  const info: SessionInfo = {
+  const info: any = {
     tenantId,
     status: 'connecting',
     qr: null,
-    qrExpiresAt: null,
     phoneNumber: null,
-    lastError: null,
-    lastConnectedAt: null,
+    lastConnectedAt: null
   };
 
   sessions.set(tenantId, { sock, info });
 
-  sock.ev.on('connection.update', async (update: any) => {
-    console.log('UPDATE:', update);
-
-    const { connection, lastDisconnect, qr } = update;
+  sock.ev.on('connection.update', async (update) => {
+    const { connection, qr } = update;
 
     if (qr) {
       info.status = 'qr_pending';
       info.qr = await QRCode.toDataURL(qr);
-      info.qrExpiresAt = Date.now() + 60_000;
     }
 
     if (connection === 'open') {
       info.status = 'connected';
       info.phoneNumber = sock.user?.id || null;
       info.lastConnectedAt = new Date().toISOString();
-      info.lastError = null;
     }
 
     if (connection === 'close') {
-      const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
-      const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
-
-      if (shouldReconnect) {
-        console.log(`Reconnecting session ${tenantId}...`);
-        createSession(tenantId);
-      } else {
-        info.status = 'disconnected';
-        info.lastError = 'Logged out';
-      }
+      info.status = 'disconnected';
     }
   });
 
@@ -80,33 +55,20 @@ export async function createSession(tenantId: string): Promise<SessionInfo> {
   return info;
 }
 
-export function getSessionStatus(tenantId: string): SessionInfo {
-  return (
-    sessions.get(tenantId)?.info || {
-      tenantId,
-      status: 'disconnected',
-      qr: null,
-      qrExpiresAt: null,
-      phoneNumber: null,
-      lastError: null,
-      lastConnectedAt: null,
-    }
-  );
+export function getSessionStatus(tenantId: string) {
+  return sessions.get(tenantId)?.info || { status: 'not_found' };
 }
 
 export function getSessionQR(tenantId: string) {
-  const info = getSessionStatus(tenantId);
+  const info = sessions.get(tenantId)?.info;
+
   return {
-    qr: info.qr,
-    status: info.status,
-    expiresAt: info.qrExpiresAt,
+    qr: info?.qr || null,
+    status: info?.status || 'not_found'
   };
 }
 
-export async function disconnectSession(
-  tenantId: string,
-  clear = false
-) {
+export async function disconnectSession(tenantId: string) {
   const session = sessions.get(tenantId);
 
   if (session) {
@@ -114,16 +76,5 @@ export async function disconnectSession(
     sessions.delete(tenantId);
   }
 
-  if (clear) {
-    const dir = getSessionPath(tenantId);
-    if (fs.existsSync(dir)) {
-      fs.rmSync(dir, { recursive: true, force: true });
-    }
-  }
-
-  return getSessionStatus(tenantId);
-}
-
-export async function reconnectSession(tenantId: string) {
-  return createSession(tenantId);
+  return { status: 'disconnected' };
 }
