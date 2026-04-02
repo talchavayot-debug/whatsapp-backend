@@ -1,7 +1,7 @@
 import makeWASocket, { DisconnectReason, useMultiFileAuthState } from '@whiskeysockets/baileys';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as pino from 'pino';
+import pino from 'pino';
 import * as QRCode from 'qrcode';
 import { Boom } from '@hapi/boom';
 import { SessionInfo } from './types';
