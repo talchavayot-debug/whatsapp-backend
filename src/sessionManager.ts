@@ -1,10 +1,9 @@
-import makeWASocket, { useMultiFileAuthState, DisconnectReason } from '@whiskeysockets/baileys';
+import makeWASocket, { useMultiFileAuthState } from '@whiskeysockets/baileys';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as QRCode from 'qrcode';
 
 const sessions = new Map<string, any>();
-
 const SESSIONS_DIR = './sessions';
 
 function getSessionPath(tenantId: string) {
@@ -13,17 +12,18 @@ function getSessionPath(tenantId: string) {
 
 export async function createSession(tenantId: string) {
   const sessionPath = getSessionPath(tenantId);
+
   fs.mkdirSync(SESSIONS_DIR, { recursive: true });
   fs.mkdirSync(sessionPath, { recursive: true });
 
   const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
 
-const sock = makeWASocket({
-  auth: state,
-  printQRInTerminal: true,
-  browser: ['Railway', 'Chrome', '1.0.0'],
-  syncFullHistory: false
-});
+  const sock = makeWASocket({
+    auth: state,
+    printQRInTerminal: true,
+    browser: ['Railway', 'Chrome', '1.0.0'],
+    syncFullHistory: false
+  });
 
   const info: any = {
     tenantId,
@@ -36,20 +36,25 @@ const sock = makeWASocket({
   sessions.set(tenantId, { sock, info });
 
   sock.ev.on('connection.update', async (update) => {
+    console.log('UPDATE:', update);
+
     const { connection, qr } = update;
 
     if (qr) {
+      console.log('QR GENERATED');
       info.status = 'qr_pending';
       info.qr = await QRCode.toDataURL(qr);
     }
 
     if (connection === 'open') {
+      console.log('CONNECTED');
       info.status = 'connected';
       info.phoneNumber = sock.user?.id || null;
       info.lastConnectedAt = new Date().toISOString();
     }
 
     if (connection === 'close') {
+      console.log('DISCONNECT REASON:', update);
       info.status = 'disconnected';
     }
   });
@@ -57,10 +62,6 @@ const sock = makeWASocket({
   sock.ev.on('creds.update', saveCreds);
 
   return info;
-}
-
-export function getSessionStatus(tenantId: string) {
-  return sessions.get(tenantId)?.info || { status: 'not_found' };
 }
 
 export function getSessionQR(tenantId: string) {
