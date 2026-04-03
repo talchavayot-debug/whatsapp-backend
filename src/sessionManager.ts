@@ -21,7 +21,8 @@ export async function createSession(tenantId: string) {
 const sock = makeWASocket({
   auth: state,
   printQRInTerminal: true,
-  browser: ['Railway', 'Chrome', '1.0.0']
+  browser: ['Railway', 'Chrome', '1.0.0'],
+  syncFullHistory: false
 });
 
   const info: any = {
