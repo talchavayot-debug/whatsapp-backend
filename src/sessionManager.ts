@@ -18,12 +18,14 @@ export async function createSession(tenantId: string) {
 
   const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
 
-  const sock = makeWASocket({
-    auth: state,
-    printQRInTerminal: true,
-    browser: ['Railway', 'Chrome', '1.0.0'],
-    syncFullHistory: false
-  });
+const sock = makeWASocket({
+  auth: state,
+  printQRInTerminal: false,
+  browser: ['MacOS', 'Chrome', '121.0.0'],
+  syncFullHistory: false,
+  connectTimeoutMs: 60000,
+  defaultQueryTimeoutMs: 0,
+});
 
   const info: any = {
     tenantId,
