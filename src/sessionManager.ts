@@ -38,8 +38,8 @@ export async function createSession(tenantId: string) {
   sock.ev.on('connection.update', async (update) => {
     console.log('UPDATE:', update);
 
-    const { connection, qr } = update;
-
+const { connection, qr, lastDisconnect } = update;
+    
     if (qr) {
       console.log('QR GENERATED');
       info.status = 'qr_pending';
@@ -54,8 +54,11 @@ export async function createSession(tenantId: string) {
     }
 
     if (connection === 'close') {
-      console.log('DISCONNECT REASON:', update);
-      info.status = 'disconnected';
+  const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
+  console.log('STATUS CODE:', statusCode);
+  console.log('LAST DISCONNECT:', lastDisconnect);
+  info.status = 'disconnected';
+}
     }
   });
 
