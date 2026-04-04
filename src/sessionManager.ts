@@ -22,9 +22,13 @@ const sock = makeWASocket({
   auth: state,
   printQRInTerminal: false,
   browser: ['MacOS', 'Chrome', '121.0.0'],
-  syncFullHistory: false,
+
   connectTimeoutMs: 60000,
-  defaultQueryTimeoutMs: 0,
+  keepAliveIntervalMs: 10000,
+  retryRequestDelayMs: 250,
+
+  markOnlineOnConnect: true,
+  syncFullHistory: false,
 });
 
   const info: any = {
