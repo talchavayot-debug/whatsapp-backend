@@ -18,25 +18,20 @@ export async function createSession(tenantId: string) {
 
   const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
 
-const sock = makeWASocket({
-  auth: state,
-  printQRInTerminal: false,
-  browser: ['MacOS', 'Chrome', '121.0.0'],
-
-  connectTimeoutMs: 60000,
-  keepAliveIntervalMs: 10000,
-  retryRequestDelayMs: 250,
-
-  markOnlineOnConnect: true,
-  syncFullHistory: false,
-});
+  const sock = makeWASocket({
+    auth: state,
+    printQRInTerminal: true,
+    browser: ['Railway', 'Chrome', '1.0.0'],
+    syncFullHistory: false,
+    markOnlineOnConnect: true,
+  });
 
   const info: any = {
     tenantId,
     status: 'connecting',
     qr: null,
     phoneNumber: null,
-    lastConnectedAt: null
+    lastConnectedAt: null,
   };
 
   sessions.set(tenantId, { sock, info });
@@ -44,8 +39,8 @@ const sock = makeWASocket({
   sock.ev.on('connection.update', async (update) => {
     console.log('UPDATE:', update);
 
-const { connection, qr, lastDisconnect } = update;
-    
+    const { connection, qr, lastDisconnect } = update as any;
+
     if (qr) {
       console.log('QR GENERATED');
       info.status = 'qr_pending';
@@ -60,11 +55,10 @@ const { connection, qr, lastDisconnect } = update;
     }
 
     if (connection === 'close') {
-  const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
-  console.log('STATUS CODE:', statusCode);
-  console.log('LAST DISCONNECT:', lastDisconnect);
-  info.status = 'disconnected';
-}
+      const statusCode = lastDisconnect?.error?.output?.statusCode;
+      console.log('STATUS CODE:', statusCode);
+      console.log('LAST DISCONNECT:', lastDisconnect);
+      info.status = 'disconnected';
     }
   });
 
@@ -78,7 +72,7 @@ export function getSessionQR(tenantId: string) {
 
   return {
     qr: info?.qr || null,
-    status: info?.status || 'not_found'
+    status: info?.status || 'not_found',
   };
 }
 
